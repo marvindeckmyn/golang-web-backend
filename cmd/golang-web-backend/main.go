@@ -1,13 +1,30 @@
 package main
 
-import "net/http"
-
-type footballerHandler struct{}
-
-func (h *footballerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+)
 
 func main() {
-	mux := http.NewServeMux()
-	mux.Handle("/footballers/", &footballerHandler{})
-	http.ListenAndServe(":8080", mux)
+	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("/status was called")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		status := map[string]string{"status": "OK"}
+		json.NewEncoder(w).Encode(status)
+	})
+
+	http.HandleFunc("/", handleRoot)
+
+	err := http.ListenAndServe(":3000", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	log.Println("/ was called")
+	w.WriteHeader(http.StatusNotImplemented)
 }
