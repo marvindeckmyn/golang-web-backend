@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 func main() {
+	fmt.Println("REST web server started")
+
 	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("/status was called")
 		w.Header().Set("Content-Type", "application/json")
