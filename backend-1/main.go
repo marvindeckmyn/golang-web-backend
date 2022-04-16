@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -61,40 +59,10 @@ func (h *footballerHandlers) get(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBytes)
 }
 
-func (h *footballerHandlers) getRandomFootballer(w http.ResponseWriter, r *http.Request) {
-	ids := make([]string, len(h.store))
-	h.Lock()
-	i := 0
-	for id := range h.store {
-		ids[i] = id
-		i++
-	}
-	defer h.Unlock()
-
-	var target string
-	if len(ids) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	} else if len(ids) == 1 {
-		target = ids[0]
-	} else {
-		rand.Seed(time.Now().UnixNano())
-		target = ids[rand.Intn(len(ids))]
-	}
-
-	w.Header().Add("location", fmt.Sprintf("/footballers/%s", target))
-	w.WriteHeader(http.StatusFound)
-}
-
 func (h *footballerHandlers) getFootballer(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.String(), "/")
 	if len(parts) != 3 {
 		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	if parts[2] == "random" {
-		h.getRandomFootballer(w, r)
 		return
 	}
 
@@ -153,36 +121,10 @@ func newFootballerHandlers() *footballerHandlers {
 	}
 }
 
-type adminPortal struct {
-	password string
-}
-
-func newAdminPortal() *adminPortal {
-	password := os.Getenv("ADMIN_PASSWORD")
-	if password == "" {
-		panic("required env var ADMIN_PASSWORD not set")
-	}
-
-	return &adminPortal{password: password}
-}
-
-func (a adminPortal) handler(w http.ResponseWriter, r *http.Request) {
-	user, pass, ok := r.BasicAuth()
-	if !ok || user != "admin" || pass != a.password {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("401 - unauthorized"))
-		return
-	}
-
-	w.Write([]byte("<html><h1>Admin portal</h1></html>"))
-}
-
 func main() {
-	//admin := newAdminPortal()
 	footballerHandlers := newFootballerHandlers()
-	http.HandleFunc("/footballers", footballerHandlers.footballers)
-	http.HandleFunc("/footballers/", footballerHandlers.getFootballer)
-	//http.HandleFunc("/admin", admin.handler)
+	http.HandleFunc("/footballer", footballerHandlers.footballers)
+	http.HandleFunc("/footballer/", footballerHandlers.getFootballer)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
